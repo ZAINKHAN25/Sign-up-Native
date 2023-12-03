@@ -1,8 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  userEmail: '',
-  userPass: ''
+  loginPersonData: []
 };
 
 const counterSlice = createSlice({
@@ -12,7 +11,6 @@ const counterSlice = createSlice({
       state.loginPersonData = action.payload;
       console.log("state", state.loginPersonData);
       console.log("action", action.payload);
-      console.log("Kam chal gya");
     },
   },
   initialState,

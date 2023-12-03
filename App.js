@@ -1,12 +1,12 @@
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { createUserWithEmailAndPassword, auth, signInWithEmailAndPassword, setDoc, doc, db } from './firebaseConfig.js';
+import { createUserWithEmailAndPassword, auth, signInWithEmailAndPassword, setDoc, doc, db, getDoc } from './firebaseConfig.js';
 
 import { useDispatch, useSelector } from "react-redux";
-import { changeloginPersonData } from './store/Slices/loginPersonData.js';
+import loginPersonData, { changeloginPersonData } from './store/Slices/loginPersonData.js';
 import { Provider } from "react-redux";
 import store from "./store/store.js";
 
@@ -107,14 +107,22 @@ function LoginComponent({ navigation }) {
 
   function Signin() {
     signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
+      .then(async (userCredential) => {
         const user = userCredential.user;
-        console.log(user);
 
-        const updatecounter = () => {
-          dispatch(changeloginPersonData(user));
-        };
-        updatecounter()
+
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          console.log("Document data:", docSnap.data());
+          const updatecounter = () => {
+            dispatch(changeloginPersonData(docSnap.data()));
+          };
+          updatecounter()
+          navigation.navigate('Home')
+        } else {
+          console.log("No such document!");
+        }
       })
       .catch((error) => {
         const errorCode = error.code;
@@ -151,20 +159,35 @@ function LoginComponent({ navigation }) {
   )
 }
 
+function HomeComponent() {
+  const { loginPersonData } = useSelector((state) => state);
+  let [loginPersonDataState, setloginPersonDataState] = useState('')
+  useEffect(() => {
+    setloginPersonDataState(loginPersonData)
+  }, [loginPersonData])
+  console.log(loginPersonDataState?.loginPersonData?.firstName);
+
+  return (
+    <>
+      hello it is home page {loginPersonDataState?.loginPersonData?.firstName}
+    </>
+  )
+}
+
 
 // main Screen
 export default function App() {
   const Stack = createNativeStackNavigator();
   return (
-    // <NavigationContainer>
-    //   <Stack.Navigator initialRouteName="Signup">
-    //     <Stack.Screen options={{ headerShown: false }} name="Signup" component={SignupComponent} />
-    //     <Stack.Screen options={{ headerShown: false }} name="Login" component={LoginComponent} />
-    //   </Stack.Navigator>
-    // </NavigationContainer>
     <Provider store={store}>
-    <App />
-  </Provider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Signup">
+          <Stack.Screen options={{ headerShown: false }} name="Signup" component={SignupComponent} />
+          <Stack.Screen options={{ headerShown: false }} name="Login" component={LoginComponent} />
+          <Stack.Screen options={{ headerShown: false }} name="Home" component={HomeComponent} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </Provider>
   );
 }
 
